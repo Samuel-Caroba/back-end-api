@@ -6,7 +6,7 @@ const app = express();              // Instancia o Express
 const port = 3000;                  // Define a porta
 const { Pool } = pkg; // Obtém o construtor Pool do pacote pg para gerenciar conexões com o banco de dados PostgreSQL
 let pool = null; // Variável para armazenar o pool de conexões com o banco de dados
-
+app.use(express.json());
 // Função para obter uma conexão com o banco de dados
 function conectarBD() {
   if (!pool) {
