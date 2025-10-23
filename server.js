@@ -181,6 +181,123 @@ app.put("/questoes/:id", async (req, res) => {
   }
 });
 
+//Tabela de Serviços
+
+// ================= ROTAS DE SERVIÇOS =================
+
+// Rota GET /servicos → retorna todos os serviços
+app.get("/servicos", async (req, res) => {
+  console.log("Rota GET /servicos solicitada");
+  try {
+    const db = conectarBD();
+    const resultado = await db.query("SELECT * FROM servicos ORDER BY id ASC");
+    res.json(resultado.rows);
+  } catch (e) {
+    console.error("Erro ao buscar serviços:", e);
+    res.status(500).json({ erro: "Erro interno ao buscar serviços" });
+  }
+});
+
+// Rota GET /servicos/:id → retorna um serviço específico
+app.get("/servicos/:id", async (req, res) => {
+  console.log("Rota GET /servicos/:id solicitada");
+  try {
+    const id = req.params.id;
+    const db = conectarBD();
+    const resultado = await db.query("SELECT * FROM servicos WHERE id = $1", [id]);
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ mensagem: "Serviço não encontrado" });
+    }
+    res.json(resultado.rows[0]);
+  } catch (e) {
+    console.error("Erro ao buscar serviço:", e);
+    res.status(500).json({ erro: "Erro interno ao buscar serviço" });
+  }
+});
+
+// Rota POST /servicos → cria um novo serviço
+app.post("/servicos", async (req, res) => {
+  console.log("Rota POST /servicos solicitada");
+  try {
+    const { nome, login, senha } = req.body;
+    if (!nome || !login || !senha) {
+      return res.status(400).json({
+        erro: "Dados inválidos",
+        mensagem: "Os campos nome, login e senha são obrigatórios."
+      });
+    }
+
+    const db = conectarBD();
+    const consulta = `
+      INSERT INTO servicos (nome, login, senha)
+      VALUES ($1, $2, $3)
+      RETURNING *;
+    `;
+    const resultado = await db.query(consulta, [nome, login, senha]);
+    res.status(201).json({
+      mensagem: "Serviço criado com sucesso!",
+      servico: resultado.rows[0]
+    });
+  } catch (e) {
+    console.error("Erro ao criar serviço:", e);
+    res.status(500).json({ erro: "Erro interno ao criar serviço" });
+  }
+});
+
+// Rota PUT /servicos/:id → atualiza um serviço existente
+app.put("/servicos/:id", async (req, res) => {
+  console.log("Rota PUT /servicos/:id solicitada");
+  try {
+    const id = req.params.id;
+    const { nome, login, senha } = req.body;
+    const db = conectarBD();
+
+    const existente = await db.query("SELECT * FROM servicos WHERE id = $1", [id]);
+    if (existente.rows.length === 0) {
+      return res.status(404).json({ mensagem: "Serviço não encontrado" });
+    }
+
+    const atual = existente.rows[0];
+    const novoNome = nome || atual.nome;
+    const novoLogin = login || atual.login;
+    const novaSenha = senha || atual.senha;
+
+    const consulta = `
+      UPDATE servicos
+      SET nome = $1, login = $2, senha = $3
+      WHERE id = $4
+      RETURNING *;
+    `;
+    const resultado = await db.query(consulta, [novoNome, novoLogin, novaSenha, id]);
+    res.json({
+      mensagem: "Serviço atualizado com sucesso!",
+      servico: resultado.rows[0]
+    });
+  } catch (e) {
+    console.error("Erro ao atualizar serviço:", e);
+    res.status(500).json({ erro: "Erro interno ao atualizar serviço" });
+  }
+});
+
+// Rota DELETE /servicos/:id → exclui um serviço
+app.delete("/servicos/:id", async (req, res) => {
+  console.log("Rota DELETE /servicos/:id solicitada");
+  try {
+    const id = req.params.id;
+    const db = conectarBD();
+    const resultado = await db.query("DELETE FROM servicos WHERE id = $1 RETURNING *;", [id]);
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ mensagem: "Serviço não encontrado" });
+    }
+
+    res.json({ mensagem: "Serviço excluído com sucesso!" });
+  } catch (e) {
+    console.error("Erro ao excluir serviço:", e);
+    res.status(500).json({ erro: "Erro interno ao excluir serviço" });
+  }
+});
+
 app.listen(port, () => {            // Um socket para "escutar" as requisições
   console.log(`Serviço rodando na porta:  ${port}`);
 });
